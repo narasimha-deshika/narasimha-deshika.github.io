@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free-Hand Drawing App with Toolbar</title>
+    <style>
+        #drawingCanvas {
+            border: 1px solid #000;
+        }
+
+        #editor {
+            margin-top: 20px;
+        }
+
+        .toolbar {
+            margin-top: 10px;
+        }
+
+        .toolbar button {
+            margin-right: 10px;
+        }
+    </style>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/3.6.3/fabric.min.js"></script>
+    <script src="https://cdn.ckeditor.com/ckeditor5/44.0.0/classic/ckeditor.js"></script>
+</head>
+<body>
+
+<!-- Toolbar for selecting shapes -->
+<div class="toolbar">
+    <button onclick="setDrawingMode('pencil')">Pencil</button>
+    <button onclick="setDrawingMode('rectangle')">Rectangle</button>
+    <button onclick="setDrawingMode('circle')">Circle</button>
+</div>
+
+<!-- Your drawing canvas -->
+<canvas id="drawingCanvas" width="500" height="300"></canvas>
+
+<!-- CKEditor integration -->
+<div id="editor"></div>
+
+<script>
+    $(document).ready(function () {
+        // Initialize fabric.js canvas
+        var canvas = new fabric.Canvas('drawingCanvas', {
+            isDrawingMode: true
+        });
+
+        // CKEditor integration
+        ClassicEditor
+            .create(document.querySelector('#editor'))
+            .then(editor => {
+                // Handle changes in the canvas and update CKEditor
+                canvas.on('path:created', function () {
+                    updateCKEditor(editor);
+                });
+
+                // Update CKEditor on initial load
+                updateCKEditor(editor);
+            })
+            .catch(error => {
+                console.error(error);
+            });
+
+        // Function to update CKEditor with the canvas data
+        function updateCKEditor(editor) {
+            var canvasData = canvas.toSVG();
+            editor.model.change(writer => {
+                editor.model.setData(canvasData, { isExternal: true });
+            });
+        }
+
+        // Function to set drawing mode
+        function setDrawingMode(mode) {
+            canvas.isDrawingMode = mode === 'pencil';
+
+            if (mode === 'rectangle') {
+                canvas.isDrawingMode = false;
+                canvas.selection = false;
+                canvas.off('mouse:down');
+                canvas.on('mouse:down', function (o) {
+                    var pointer = canvas.getPointer(o.e);
+                    var rect = new fabric.Rect({
+                        left: pointer.x,
+                        top: pointer.y,
+                        width: 0,
+                        height: 0,
+                        fill: 'transparent',
+                        stroke: 'black',
+                        strokeWidth: 2,
+                    });
+                    canvas.add(rect);
+                    canvas.setActiveObject(rect);
+                });
+            } else if (mode === 'circle') {
+                canvas.isDrawingMode = false;
+                canvas.selection = false;
+                canvas.off('mouse:down');
+                canvas.on('mouse:down', function (o) {
+                    var pointer = canvas.getPointer(o.e);
+                    var circle = new fabric.Circle({
+                        left: pointer.x,
+                        top: pointer.y,
+                        radius: 0,
+                        fill: 'transparent',
+                        stroke: 'black',
+                        strokeWidth: 2,
+                    });
+                    canvas.add(circle);
+                    canvas.setActiveObject(circle);
+                });
+            }
+        }
+    });
+</script>
+
+</body>
+</html>
